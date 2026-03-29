@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   const token = formData.get("token")?.toString() || "";
   const conversationId = formData.get("conversationId")?.toString() || "";
 
-  const redirectUrl = new URL("/odeme/basarili/sonuc", req.url);
+  const redirectUrl = new URL("/odeme/basarili", req.url);
 
   if (token) {
     redirectUrl.searchParams.set("token", token);

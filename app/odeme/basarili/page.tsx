@@ -1,20 +1,20 @@
-import { NextResponse } from "next/server";
+export default function PaymentSuccessPage() {
+  return (
+    <main className="container" style={{ padding: "40px 16px" }}>
+      <div
+        className="card"
+        style={{ padding: 24, maxWidth: 720, margin: "0 auto" }}
+      >
+        <div className="badge">Ödeme Sonucu</div>
 
-export async function POST(req: Request) {
-  const formData = await req.formData();
+        <h1 style={{ fontSize: 38, marginTop: 16 }}>
+          Ödeme tamamlandı 🎉
+        </h1>
 
-  const token = formData.get("token")?.toString() || "";
-  const conversationId = formData.get("conversationId")?.toString() || "";
-
-  const redirectUrl = new URL("/odeme/basarili/sonuc", req.url);
-
-  if (token) {
-    redirectUrl.searchParams.set("token", token);
-  }
-
-  if (conversationId) {
-    redirectUrl.searchParams.set("conversationId", conversationId);
-  }
-
-  return NextResponse.redirect(redirectUrl, 303);
+        <p className="small" style={{ marginTop: 12 }}>
+          iyzico dönüşü başarıyla alındı.
+        </p>
+      </div>
+    </main>
+  );
 }
