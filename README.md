@@ -1,7 +1,7 @@
 # MemoriaMetal Pro V4
 ## 🚀 Live Demo
-🔗 https://memorial-metal-z289-pw5n8n5l7-buraklabsdev-1779s-projects.vercel.appBu sürümde:
-- Admin dashboard
+🔗 https://memorial-metal-z289-pw5n8n5l7-buraklabsdev-1779s-projects.vercel.app-
+ Admin dashboard
 - Ürün CRUD
 - Upload + önizleme
 - Sipariş oluşturma
