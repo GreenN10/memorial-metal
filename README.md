@@ -1,21 +1,58 @@
-# MemoriaMetal Pro V4 
- Admin dashboard
-- Ürün CRUD
-- Upload + önizleme
-- Sipariş oluşturma
-- Üye kayıt / giriş
-- Sipariş takip
-- Supabase Storage
-- Resend mail
-- iyzico init + callback retrieve iskeleti
-- PayTR iframe token + callback doğrulama iskeleti
-- Admin middleware
-- Admin seed script
-- Ürün seed script
-- Deploy rehberi
-- Kontrol listesi
+# 🟡 MemorialMetal Pro V4
 
-## Başlangıç
+Modern, full-stack bir e-ticaret uygulaması.  
+Kullanıcılar fotoğraflarını yükleyip metal tablolara dönüştürebilir, sipariş verebilir ve takip edebilir.
+
+---
+
+## 🚀 Canlı Demo
+👉 https://memorial-metal.vercel.app
+
+---
+
+## ✨ Özellikler
+
+### 👤 Kullanıcı
+- Kayıt / giriş sistemi (JWT)
+- Sepet yönetimi
+- Sipariş oluşturma
+- Sipariş takibi
+
+### 🛒 E-Ticaret
+- Ürün listeleme
+- Sepete ekleme
+- Ödeme akışı
+
+### 💳 Ödeme Sistemleri
+- İyzico (init + callback)
+- PayTR (iframe + doğrulama)
+
+### 🛠️ Admin Panel
+- Ürün CRUD
+- Sipariş yönetimi
+- Dashboard (istatistikler)
+- Admin middleware koruması
+
+### ☁️ Altyapı
+- MongoDB (Mongoose)
+- Supabase Storage (dosya yükleme)
+- Resend (mail sistemi)
+
+---
+
+## 🧱 Teknolojiler
+
+- Next.js 15
+- React
+- TypeScript
+- MongoDB
+- Tailwind CSS
+- Vercel
+
+---
+
+## ⚙️ Kurulum
+
 ```bash
 npm install
 cp .env.example .env.local
@@ -23,10 +60,3 @@ npm run check:env
 npm run seed:admin
 npm run seed:products
 npm run dev
-```
-
-
-## Yeni eklenenler
-- `/sepet` sayfası
-- `/odeme` sayfası
-- ürün kartlarında aktif `Sepete Ekle`
