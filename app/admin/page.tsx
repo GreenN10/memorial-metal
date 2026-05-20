@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
 import { connectDB } from "@/lib/mongodb";
 import { Order } from "@/models/Order";
 import { Product } from "@/models/Product";
@@ -22,6 +23,15 @@ function last7DaysLabels() {
 }
 
 export default async function AdminPage() {
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    return (
+      <main className="container" style={{ padding: "40px 16px" }}>
+        <h1 style={{ fontSize: 42, marginBottom: 8 }}>Admin Paneli</h1>
+        <p className="small">Admin paneli canlı ortamda yüklenecek.</p>
+      </main>
+    );
+  }
+
   await connectDB();
 
   const [ordersCount, productsCount, usersCount, orders] = await Promise.all([
@@ -32,7 +42,6 @@ export default async function AdminPage() {
   ]);
 
   const revenue = orders.reduce((sum: number, order: any) => sum + (order.total || 0), 0);
-
   const labels = last7DaysLabels();
 
   const orderSeries = labels.map((label) => {
