@@ -1,327 +1,711 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
+
+type OrderItem = {
+  name: string;
+  price: number;
+  quantity: number;
+  size: string;
+};
+
+type TrackingResult = {
+  orderCode: string;
+  cargoCode?: string;
+  status: string;
+  customerName: string;
+  userEmail: string;
+  phone: string;
+  city: string;
+  address: string;
+  items?: OrderItem[];
+  total?: number;
+  uploadedImage?: string;
+  note?: string;
+  paymentMethod?: string;
+  createdAt?: string;
+};
 
 const shipmentStatuses = [
   "Sipariş Alındı",
   "Hazırlanıyor",
   "Kargoya Verildi",
-  "Teslim Edildi"
+  "Teslim Edildi",
 ];
 
 export default function TrackingPage() {
   const [code, setCode] = useState("");
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<TrackingResult | null>(null);
   const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState<
+    "info" | "error" | "success"
+  >("info");
+  const [loading, setLoading] = useState(false);
 
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    setMessage("Sipariş aranıyor...");
-    setResult(null);
+  const currentStep = useMemo(() => {
+    if (!result) return -1;
+
+    return shipmentStatuses.indexOf(result.status);
+  }, [result]);
+
+  async function handleSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const normalizedCode = code.trim().toUpperCase();
+
+    if (!normalizedCode) {
+      setResult(null);
+      setMessageType("error");
+      setMessage("Lütfen sipariş veya kargo kodunu girin.");
+      return;
+    }
 
     try {
-      const res = await fetch(`/api/tracking/${code}`);
-      const data = await res.json();
+      setLoading(true);
+      setResult(null);
+      setMessageType("info");
+      setMessage("Siparişiniz aranıyor...");
 
-      if (!res.ok) {
+      const response = await fetch(
+        `/api/tracking/${encodeURIComponent(normalizedCode)}`,
+        {
+          method: "GET",
+          cache: "no-store",
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessageType("error");
         setMessage(data.message || "Sipariş bulunamadı.");
         return;
       }
 
       setResult(data);
-      setMessage("");
+      setMessageType("success");
+      setMessage("Siparişiniz bulundu.");
     } catch {
-      setMessage("Bir hata oluştu.");
+      setResult(null);
+      setMessageType("error");
+      setMessage(
+        "Sipariş sorgulanırken bağlantı hatası oluştu. Tekrar deneyin.",
+      );
+    } finally {
+      setLoading(false);
     }
   }
 
-  const currentStep = result ? shipmentStatuses.indexOf(result.status) : -1;
+  function formatPrice(value?: number) {
+    return Number(value || 0).toLocaleString("tr-TR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  function formatDate(value?: string) {
+    if (!value) return "Tarih bilgisi bulunmuyor";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return "Tarih bilgisi bulunmuyor";
+    }
+
+    return new Intl.DateTimeFormat("tr-TR", {
+      dateStyle: "long",
+      timeStyle: "short",
+    }).format(date);
+  }
+
+  function getProgressWidth() {
+    if (currentStep < 0) return "0%";
+
+    return `${((currentStep + 1) / shipmentStatuses.length) * 100}%`;
+  }
 
   return (
     <main
       style={{
         minHeight: "100vh",
+        padding: "40px 16px 80px",
         background:
           "radial-gradient(circle at top right, rgba(250,204,21,.08), transparent 25%), linear-gradient(180deg, #0b0b0c 0%, #111214 100%)",
-        padding: "40px 16px 80px"
       }}
     >
       <div className="container">
-        <div
+        <section
           className="card"
           style={{
+            position: "relative",
+            overflow: "hidden",
             padding: 28,
             borderRadius: 30,
-            border: "1px solid rgba(250,204,21,.18)",
+            border: "1px solid rgba(250,204,21,.16)",
             background:
-              "linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02))",
-            boxShadow: "0 30px 80px rgba(0,0,0,.35)"
+              "linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02))",
+            boxShadow: "0 30px 80px rgba(0,0,0,.35)",
           }}
         >
-          <div style={{ maxWidth: 760 }}>
-            <div
-              style={{
-                display: "inline-block",
-                background: "#facc15",
-                color: "#000",
-                padding: "8px 14px",
-                borderRadius: 999,
-                fontWeight: 900,
-                fontSize: 13
-              }}
-            >
-              Premium Sipariş Takibi
-            </div>
-
-            <h1 style={{ fontSize: 46, marginTop: 18, marginBottom: 10 }}>
-              Siparişini anlık takip et
-            </h1>
-
-            <p className="small" style={{ fontSize: 16, lineHeight: 1.8 }}>
-              Sipariş kodu veya kargo kodu ile üretim ve teslimat durumunu kolayca sorgulayabilirsin.
-            </p>
-          </div>
-
-          <form
-            onSubmit={handleSearch}
+          <div
             style={{
-              display: "flex",
-              gap: 12,
-              marginTop: 24,
-              flexWrap: "wrap"
+              position: "absolute",
+              top: -120,
+              right: -120,
+              width: 300,
+              height: 300,
+              borderRadius: "50%",
+              background: "rgba(250,204,21,.07)",
+              filter: "blur(42px)",
+              pointerEvents: "none",
             }}
-          >
-            <input
-              className="input"
-              placeholder="Örn: MM225959 veya ARS456734"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              style={{
-                flex: 1,
-                minWidth: 260,
-                height: 54,
-                fontSize: 16
-              }}
-            />
-            <button
-              className="btn btn-primary"
-              type="submit"
-              style={{ height: 54, minWidth: 140 }}
-            >
-              Sorgula
-            </button>
-          </form>
+          />
 
-          {message ? (
-            <div style={{ marginTop: 16 }} className="small">
-              {message}
-            </div>
-          ) : null}
+          <div style={{ position: "relative" }}>
+            <div style={{ maxWidth: 760 }}>
+              <div className="badge">Premium Sipariş Takibi</div>
 
-          {result ? (
-            <div style={{ marginTop: 28 }}>
-              <div
+              <h1
                 style={{
-                  borderRadius: 28,
-                  padding: 24,
-                  background:
-                    "radial-gradient(circle at top, rgba(250,204,21,.08), transparent 30%), rgba(255,255,255,.03)",
-                  border: "1px solid rgba(250,204,21,.18)"
+                  margin: "18px 0 0",
+                  fontSize: 46,
+                  lineHeight: 1.1,
+                  letterSpacing: "-0.04em",
                 }}
               >
-                <div
+                Siparişini kolayca takip et
+              </h1>
+
+              <p
+                className="small"
+                style={{
+                  marginTop: 12,
+                  fontSize: 16,
+                  lineHeight: 1.8,
+                }}
+              >
+                Sipariş kodunu veya kargo kodunu girerek üretim ve teslimat
+                sürecini görüntüleyebilirsin.
+              </p>
+            </div>
+
+            <form
+              onSubmit={handleSearch}
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 12,
+                marginTop: 26,
+              }}
+            >
+              <input
+                className="input"
+                value={code}
+                onChange={(event) => {
+                  setCode(event.target.value);
+                  setMessage("");
+                }}
+                placeholder="Örn: MM225959 veya ARS456734"
+                aria-label="Sipariş veya kargo kodu"
+                autoComplete="off"
+                style={{
+                  flex: 1,
+                  minWidth: 250,
+                  height: 56,
+                  fontSize: 16,
+                  textTransform: "uppercase",
+                }}
+              />
+
+              <button
+                className="btn btn-primary"
+                type="submit"
+                disabled={loading}
+                style={{
+                  minWidth: 150,
+                  height: 56,
+                  opacity: loading ? 0.68 : 1,
+                  cursor: loading ? "not-allowed" : "pointer",
+                }}
+              >
+                {loading ? "Aranıyor..." : "Siparişi Sorgula"}
+              </button>
+            </form>
+
+            {message ? (
+              <div
+                style={{
+                  marginTop: 16,
+                  padding: "13px 15px",
+                  border:
+                    messageType === "error"
+                      ? "1px solid rgba(239,68,68,.24)"
+                      : messageType === "success"
+                        ? "1px solid rgba(34,197,94,.24)"
+                        : "1px solid rgba(250,204,21,.18)",
+                  borderRadius: 14,
+                  background:
+                    messageType === "error"
+                      ? "rgba(239,68,68,.07)"
+                      : messageType === "success"
+                        ? "rgba(34,197,94,.07)"
+                        : "rgba(250,204,21,.05)",
+                  color:
+                    messageType === "error"
+                      ? "#fca5a5"
+                      : messageType === "success"
+                        ? "#86efac"
+                        : "#e4e4e7",
+                  fontSize: 13,
+                  fontWeight: 750,
+                }}
+              >
+                {message}
+              </div>
+            ) : null}
+
+            {result ? (
+              <div style={{ marginTop: 28 }}>
+                <section
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 16,
-                    flexWrap: "wrap",
-                    alignItems: "center"
+                    padding: 24,
+                    border: "1px solid rgba(250,204,21,.18)",
+                    borderRadius: 28,
+                    background:
+                      "radial-gradient(circle at top, rgba(250,204,21,.07), transparent 30%), rgba(255,255,255,.025)",
                   }}
                 >
-                  <div>
-                    <div className="small">Sipariş Kodu</div>
-                    <div
-                      style={{
-                        marginTop: 6,
-                        fontSize: 30,
-                        fontWeight: 900,
-                        color: "#facc15"
-                      }}
-                    >
-                      {result.orderCode}
-                    </div>
-                    <div className="small" style={{ marginTop: 10 }}>
-                      Kargo Kodu: {result.cargoCode || "Henüz girilmedi"}
-                    </div>
-                  </div>
-
-                  <div style={{ textAlign: "right" }}>
-                    <div className="small">Güncel Durum</div>
-                    <div className="badge" style={{ marginTop: 8 }}>
-                      {result.status}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ marginTop: 28 }}>
                   <div
                     style={{
-                      height: 10,
-                      borderRadius: 999,
-                      background: "rgba(255,255,255,.08)",
-                      overflow: "hidden",
-                      boxShadow: "inset 0 0 0 1px rgba(255,255,255,.04)"
+                      display: "flex",
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 18,
                     }}
                   >
-                    <div
-                      style={{
-                        height: "100%",
-                        width:
-                          currentStep === 0
-                            ? "25%"
-                            : currentStep === 1
-                            ? "50%"
-                            : currentStep === 2
-                            ? "75%"
-                            : currentStep === 3
-                            ? "100%"
-                            : "0%",
-                        background:
-                          "linear-gradient(90deg, #facc15 0%, #fde047 100%)",
-                        transition: "all .4s ease"
-                      }}
-                    />
-                  </div>
+                    <div>
+                      <div className="small">Sipariş Kodu</div>
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(4, minmax(0,1fr))",
-                      gap: 14,
-                      marginTop: 18
-                    }}
-                  >
-                    {shipmentStatuses.map((item, index) => {
-                      const active = currentStep >= index;
-                      return (
-                        <div
-                          key={item}
-                          style={{
-                            padding: 16,
-                            borderRadius: 20,
-                            textAlign: "center",
-                            fontWeight: 800,
-                            fontSize: 13,
-                            background: active ? "#facc15" : "rgba(255,255,255,.04)",
-                            color: active ? "#000" : "#9ca3af",
-                            border: "1px solid rgba(255,255,255,.08)",
-                            boxShadow: active ? "0 10px 24px rgba(250,204,21,.18)" : "none"
-                          }}
-                        >
-                          {item}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="grid grid-2" style={{ marginTop: 24 }}>
-                  <div className="card" style={{ padding: 18, borderRadius: 22 }}>
-                    <div className="small">Müşteri Bilgileri</div>
-                    <div style={{ fontWeight: 900, fontSize: 22, marginTop: 10 }}>
-                      {result.customerName}
-                    </div>
-                    <div className="small" style={{ marginTop: 8 }}>
-                      {result.userEmail}
-                    </div>
-                    <div className="small">{result.phone}</div>
-                  </div>
-
-                  <div className="card" style={{ padding: 18, borderRadius: 22 }}>
-                    <div className="small">Teslimat Bilgileri</div>
-                    <div style={{ fontWeight: 900, fontSize: 22, marginTop: 10 }}>
-                      {result.city}
-                    </div>
-                    <div className="small" style={{ marginTop: 8 }}>
-                      {result.address}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="card" style={{ padding: 18, marginTop: 20, borderRadius: 22 }}>
-                  <div className="small">Sipariş Özeti</div>
-
-                  <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
-                    {result.items?.map((item: any, index: number) => (
                       <div
-                        key={index}
                         style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          gap: 12,
-                          borderBottom: "1px solid rgba(255,255,255,.08)",
-                          paddingBottom: 12
+                          marginTop: 6,
+                          color: "#facc15",
+                          fontSize: 30,
+                          fontWeight: 950,
+                          letterSpacing: "-0.03em",
                         }}
                       >
-                        <div>
-                          <div style={{ fontWeight: 800, fontSize: 17 }}>{item.name}</div>
-                          <div className="small">
-                            {item.quantity} adet • {item.size}
-                          </div>
-                        </div>
-
-                        <div style={{ fontWeight: 900 }}>
-                          {(item.price * item.quantity).toFixed(2)} TL
-                        </div>
+                        {result.orderCode}
                       </div>
-                    ))}
+
+                      <div
+                        className="small"
+                        style={{
+                          marginTop: 9,
+                          lineHeight: 1.7,
+                        }}
+                      >
+                        Kargo Kodu:{" "}
+                        <strong style={{ color: "#e4e4e7" }}>
+                          {result.cargoCode || "Henüz oluşturulmadı"}
+                        </strong>
+                      </div>
+
+                      <div className="small">
+                        Sipariş Tarihi:{" "}
+                        <strong style={{ color: "#e4e4e7" }}>
+                          {formatDate(result.createdAt)}
+                        </strong>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div
+                        className="small"
+                        style={{
+                          textAlign: "right",
+                        }}
+                      >
+                        Güncel Durum
+                      </div>
+
+                      <div
+                        className="badge"
+                        style={{
+                          marginTop: 8,
+                        }}
+                      >
+                        {result.status}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 30 }}>
+                    <div
+                      style={{
+                        height: 10,
+                        overflow: "hidden",
+                        borderRadius: 999,
+                        background: "rgba(255,255,255,.08)",
+                        boxShadow:
+                          "inset 0 0 0 1px rgba(255,255,255,.04)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: getProgressWidth(),
+                          height: "100%",
+                          borderRadius: 999,
+                          background:
+                            "linear-gradient(90deg, #facc15, #fde047)",
+                          boxShadow:
+                            "0 0 20px rgba(250,204,21,.26)",
+                          transition: "width .4s ease",
+                        }}
+                      />
+                    </div>
+
+                    <div
+                      className="grid grid-4"
+                      style={{
+                        gap: 12,
+                        marginTop: 18,
+                      }}
+                    >
+                      {shipmentStatuses.map((status, index) => {
+                        const completed = currentStep >= index;
+                        const current = currentStep === index;
+
+                        return (
+                          <div
+                            key={status}
+                            style={{
+                              position: "relative",
+                              minHeight: 95,
+                              padding: 15,
+                              border: completed
+                                ? "1px solid rgba(250,204,21,.35)"
+                                : "1px solid rgba(255,255,255,.08)",
+                              borderRadius: 18,
+                              background: completed
+                                ? current
+                                  ? "#facc15"
+                                  : "rgba(250,204,21,.09)"
+                                : "rgba(255,255,255,.025)",
+                              color: current
+                                ? "#090909"
+                                : completed
+                                  ? "#fde047"
+                                  : "#71717a",
+                              textAlign: "center",
+                              boxShadow: current
+                                ? "0 14px 30px rgba(250,204,21,.18)"
+                                : "none",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                width: 30,
+                                height: 30,
+                                alignItems: "center",
+                                justifyContent: "center",
+                                margin: "0 auto 10px",
+                                borderRadius: "50%",
+                                background: current
+                                  ? "rgba(0,0,0,.13)"
+                                  : completed
+                                    ? "rgba(250,204,21,.12)"
+                                    : "rgba(255,255,255,.04)",
+                                fontSize: 12,
+                                fontWeight: 950,
+                              }}
+                            >
+                              {completed ? "✓" : index + 1}
+                            </div>
+
+                            <div
+                              style={{
+                                fontSize: 12,
+                                fontWeight: 900,
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              {status}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <div
+                    className="grid grid-2"
                     style={{
-                      marginTop: 18,
-                      display: "flex",
-                      justifyContent: "space-between",
-                      fontWeight: 900,
-                      fontSize: 24
+                      marginTop: 24,
                     }}
                   >
-                    <span>Toplam</span>
-                    <span style={{ color: "#facc15" }}>
-                      {result.total?.toFixed(2)} TL
-                    </span>
-                  </div>
-                </div>
-
-                {result.uploadedImage ? (
-                  <div className="card" style={{ padding: 18, marginTop: 20, borderRadius: 22 }}>
-                    <div className="small" style={{ marginBottom: 12 }}>
-                      Yüklenen Fotoğraf
-                    </div>
-                    <img
-                      src={result.uploadedImage}
-                      alt="Yüklenen fotoğraf"
+                    <article
+                      className="card"
                       style={{
-                        width: 260,
-                        maxWidth: "100%",
-                        borderRadius: 20,
-                        border: "1px solid rgba(255,255,255,.08)",
-                        boxShadow: "0 20px 40px rgba(0,0,0,.25)"
+                        padding: 19,
+                        borderRadius: 22,
                       }}
-                    />
-                  </div>
-                ) : null}
+                    >
+                      <div className="small">Müşteri Bilgileri</div>
 
-                {result.note ? (
-                  <div className="card" style={{ padding: 18, marginTop: 20, borderRadius: 22 }}>
-                    <div className="small">Sipariş Notu</div>
-                    <div style={{ marginTop: 10, lineHeight: 1.8 }}>{result.note}</div>
+                      <div
+                        style={{
+                          marginTop: 10,
+                          fontSize: 21,
+                          fontWeight: 900,
+                        }}
+                      >
+                        {result.customerName}
+                      </div>
+
+                      <div
+                        className="small"
+                        style={{
+                          marginTop: 9,
+                          lineHeight: 1.7,
+                        }}
+                      >
+                        {result.userEmail || "E-posta bulunmuyor"}
+                        <br />
+                        {result.phone || "Telefon bulunmuyor"}
+                      </div>
+                    </article>
+
+                    <article
+                      className="card"
+                      style={{
+                        padding: 19,
+                        borderRadius: 22,
+                      }}
+                    >
+                      <div className="small">Teslimat Bilgileri</div>
+
+                      <div
+                        style={{
+                          marginTop: 10,
+                          fontSize: 21,
+                          fontWeight: 900,
+                        }}
+                      >
+                        {result.city || "Şehir bilgisi bulunmuyor"}
+                      </div>
+
+                      <div
+                        className="small"
+                        style={{
+                          marginTop: 9,
+                          lineHeight: 1.7,
+                        }}
+                      >
+                        {result.address || "Adres bilgisi bulunmuyor"}
+                      </div>
+                    </article>
                   </div>
-                ) : null}
+
+                  <article
+                    className="card"
+                    style={{
+                      marginTop: 20,
+                      padding: 19,
+                      borderRadius: 22,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 12,
+                      }}
+                    >
+                      <div>
+                        <div className="small">Sipariş Özeti</div>
+
+                        <h3
+                          style={{
+                            margin: "7px 0 0",
+                            fontSize: 22,
+                          }}
+                        >
+                          Sipariş edilen ürünler
+                        </h3>
+                      </div>
+
+                      <div
+                        style={{
+                          padding: "7px 11px",
+                          border: "1px solid rgba(255,255,255,.08)",
+                          borderRadius: 999,
+                          background: "rgba(255,255,255,.03)",
+                          color: "#d4d4d8",
+                          fontSize: 11,
+                          fontWeight: 800,
+                        }}
+                      >
+                        {result.paymentMethod || "Ödeme yöntemi belirtilmedi"}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: 13,
+                        marginTop: 17,
+                      }}
+                    >
+                      {result.items?.length ? (
+                        result.items.map((item, index) => (
+                          <div
+                            key={`${item.name}-${index}`}
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              justifyContent: "space-between",
+                              gap: 14,
+                              paddingBottom: 13,
+                              borderBottom:
+                                "1px solid rgba(255,255,255,.08)",
+                            }}
+                          >
+                            <div>
+                              <div
+                                style={{
+                                  fontSize: 16,
+                                  fontWeight: 850,
+                                }}
+                              >
+                                {item.name}
+                              </div>
+
+                              <div
+                                className="small"
+                                style={{
+                                  marginTop: 5,
+                                }}
+                              >
+                                {item.quantity} adet • {item.size}
+                              </div>
+                            </div>
+
+                            <strong
+                              style={{
+                                flexShrink: 0,
+                                color: "#f4f4f5",
+                              }}
+                            >
+                              {formatPrice(
+                                item.price * item.quantity,
+                              )}{" "}
+                              TL
+                            </strong>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="small">
+                          Ürün bilgisi bulunamadı.
+                        </div>
+                      )}
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-end",
+                        justifyContent: "space-between",
+                        gap: 14,
+                        marginTop: 18,
+                      }}
+                    >
+                      <div>
+                        <span className="small">Sipariş toplamı</span>
+
+                        <div
+                          style={{
+                            marginTop: 3,
+                            color: "#71717a",
+                            fontSize: 10,
+                          }}
+                        >
+                          Kargo dahil
+                        </div>
+                      </div>
+
+                      <strong
+                        style={{
+                          color: "#facc15",
+                          fontSize: 27,
+                          letterSpacing: "-0.03em",
+                        }}
+                      >
+                        {formatPrice(result.total)} TL
+                      </strong>
+                    </div>
+                  </article>
+
+                  {result.uploadedImage ? (
+                    <article
+                      className="card"
+                      style={{
+                        marginTop: 20,
+                        padding: 19,
+                        borderRadius: 22,
+                      }}
+                    >
+                      <div className="small">Yüklenen Fotoğraf</div>
+
+                      <img
+                        src={result.uploadedImage}
+                        alt="Sipariş için yüklenen fotoğraf"
+                        style={{
+                          width: 260,
+                          maxWidth: "100%",
+                          maxHeight: 320,
+                          marginTop: 13,
+                          objectFit: "cover",
+                          border: "1px solid rgba(255,255,255,.08)",
+                          borderRadius: 18,
+                          boxShadow:
+                            "0 20px 40px rgba(0,0,0,.25)",
+                        }}
+                      />
+                    </article>
+                  ) : null}
+
+                  {result.note ? (
+                    <article
+                      className="card"
+                      style={{
+                        marginTop: 20,
+                        padding: 19,
+                        borderRadius: 22,
+                      }}
+                    >
+                      <div className="small">Sipariş Notu</div>
+
+                      <div
+                        style={{
+                          marginTop: 10,
+                          color: "#d4d4d8",
+                          lineHeight: 1.8,
+                        }}
+                      >
+                        {result.note}
+                      </div>
+                    </article>
+                  ) : null}
+                </section>
               </div>
-            </div>
-          ) : null}
-        </div>
+            ) : null}
+          </div>
+        </section>
       </div>
     </main>
   );

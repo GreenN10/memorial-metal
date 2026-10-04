@@ -10,15 +10,31 @@ export default function RootLayout({
     <html lang="tr">
       <body>
         <div className="topbar">
-          <div className="container">Fotoğraflarınıza ölümsüz bir dokunuş.</div>
+          <div className="container">
+            Fotoğraflarınıza ölümsüz bir dokunuş.
+          </div>
         </div>
 
         <header className="site-header">
           <div className="container site-header-inner">
-            <Link href="/" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <Link
+              href="/"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
               <div className="logo-mark" />
+
               <div>
-                <div style={{ fontSize: 20, fontWeight: 900, color: "#facc15" }}>
+                <div
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 900,
+                    color: "#facc15",
+                  }}
+                >
                   MemoriaMetal
                 </div>
               </div>

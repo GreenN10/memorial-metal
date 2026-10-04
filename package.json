@@ -17,6 +17,7 @@
     "iyzipay": "^2.0.65",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.511.0",
+    "mongodb": "^7.5.0",
     "mongoose": "^8.13.2",
     "next": "^16.2.6",
     "react": "^19.2.6",
@@ -25,6 +26,7 @@
     "resend": "^4.0.0"
   },
   "devDependencies": {
+    "@types/node": "26.1.2",
     "@types/react": "19.2.14",
     "typescript": "5.9.3"
   }

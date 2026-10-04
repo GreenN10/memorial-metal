@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 16, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/GreenN/Desktop/memorial-metal/middleware.ts"],"sourcesContent":["import { NextResponse } from \"next/server\";\r\n\r\nexport function middleware() {\r\n  return NextResponse.next();\r\n}\r\n\r\nexport const config = {\r\n  matcher: [\"/admin/:path*\", \"/api/admin/:path*\"]\r\n};\r\n"],"names":["middleware","next","config","matcher"],"mappings":";;;;;;AAAA;AAAA;;AAEO,SAASA;IACd,OAAO,6MAAY,CAACC,IAAI;AAC1B;AAEO,MAAMC,SAAS;IACpBC,SAAS;QAAC;QAAiB;KAAoB;AACjD"}}]
+}
