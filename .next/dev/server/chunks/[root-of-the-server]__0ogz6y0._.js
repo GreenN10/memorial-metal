@@ -81,23 +81,36 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$models$2f$Product$2e$ts__$5b
 ;
 ;
 async function GET() {
-    await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongodb$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["connectDB"])();
-    const products = await __TURBOPACK__imported__module__$5b$project$5d2f$models$2f$Product$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["Product"].find().sort({
-        createdAt: -1
-    });
-    return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json(products);
+    try {
+        await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongodb$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["connectDB"])();
+        const products = await __TURBOPACK__imported__module__$5b$project$5d2f$models$2f$Product$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["Product"].find().sort({
+            createdAt: -1
+        });
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json(products);
+    } catch (error) {
+        console.error("PRODUCT GET HATASI:", error);
+        return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
+            message: "Ürünler alınamadı."
+        }, {
+            status: 500
+        });
+    }
 }
 async function POST(req) {
     try {
         const body = await req.json();
+        console.log("ÜRÜN GELEN BODY:", body);
         await (0, __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$mongodb$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["connectDB"])();
         const created = await __TURBOPACK__imported__module__$5b$project$5d2f$models$2f$Product$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["Product"].create(body);
+        console.log("ÜRÜN OLUŞTURULDU:", created);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json(created, {
             status: 201
         });
-    } catch  {
+    } catch (error) {
+        console.error("PRODUCT POST HATASI:", error);
         return __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$server$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["NextResponse"].json({
-            message: "Ürün eklenemedi."
+            message: "Ürün eklenemedi.",
+            error: error instanceof Error ? error.message : "Bilinmeyen hata"
         }, {
             status: 500
         });
@@ -155,12 +168,14 @@ var __TURBOPACK__imported__module__$5b$externals$5d2f$mongoose__$5b$external$5d$
 const ProductSchema = new __TURBOPACK__imported__module__$5b$externals$5d2f$mongoose__$5b$external$5d$__$28$mongoose$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f$mongoose$29$__["Schema"]({
     name: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     slug: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        trim: true
     },
     price: {
         type: Number,
@@ -168,15 +183,18 @@ const ProductSchema = new __TURBOPACK__imported__module__$5b$externals$5d2f$mong
     },
     size: {
         type: String,
-        required: true
+        default: "",
+        trim: true
     },
     description: {
         type: String,
-        required: true
+        default: "",
+        trim: true
     },
     image: {
         type: String,
-        required: true
+        default: "",
+        trim: true
     },
     isActive: {
         type: Boolean,

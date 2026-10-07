@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
+
 const required = ["MONGODB_URI", "JWT_SECRET", "NEXT_PUBLIC_SITE_URL"];
 const recommended = [
   "NEXT_PUBLIC_SUPABASE_URL",

@@ -14,6 +14,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
     "bcryptjs": "^2.4.3",
+    "dotenv": "^18.0.6",
     "iyzipay": "^2.0.65",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.511.0",

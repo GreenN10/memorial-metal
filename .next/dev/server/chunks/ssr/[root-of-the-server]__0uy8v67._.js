@@ -177,12 +177,14 @@ var __TURBOPACK__imported__module__$5b$externals$5d2f$mongoose__$5b$external$5d$
 const ProductSchema = new __TURBOPACK__imported__module__$5b$externals$5d2f$mongoose__$5b$external$5d$__$28$mongoose$2c$__cjs$2c$__$5b$project$5d2f$node_modules$2f$mongoose$29$__["Schema"]({
     name: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     slug: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        trim: true
     },
     price: {
         type: Number,
@@ -190,15 +192,18 @@ const ProductSchema = new __TURBOPACK__imported__module__$5b$externals$5d2f$mong
     },
     size: {
         type: String,
-        required: true
+        default: "",
+        trim: true
     },
     description: {
         type: String,
-        required: true
+        default: "",
+        trim: true
     },
     image: {
         type: String,
-        required: true
+        default: "",
+        trim: true
     },
     isActive: {
         type: Boolean,
