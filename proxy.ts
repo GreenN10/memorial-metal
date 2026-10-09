@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 
 export function proxy() {
-return NextResponse.next();
+  return NextResponse.next();
 }
 
 export const config = {
-matcher: ["/admin/:path*", "/api/admin/:path*"],
+  matcher: ["/admin/:path*", "/api/admin/:path*"],
 };
