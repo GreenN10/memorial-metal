@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
 import crypto from "crypto";
@@ -10,6 +9,8 @@ cloudinary.config();
 export async function POST(req: Request) {
   try {
     if (!process.env.CLOUDINARY_URL) {
+      console.error("CLOUDINARY_URL ortam değişkeni bulunamadı.");
+
       return NextResponse.json(
         { message: "Cloudinary bağlantı ayarı bulunamadı." },
         { status: 500 }
@@ -77,11 +78,13 @@ export async function POST(req: Request) {
       image: imageUrl,
       signedUrl: imageUrl,
     });
-  } catch (error) {
-    console.error("Upload hatası:", error);
+  } catch (error: unknown) {
+    console.error("Cloudinary yükleme hatası:", error);
 
     return NextResponse.json(
-      { message: "Fotoğraf yüklenemedi. Sunucu hatasını kontrol edin." },
+      {
+        message: "Fotoğraf yüklenemedi. Sunucu hatasını kontrol edin.",
+      },
       { status: 500 }
     );
   }
