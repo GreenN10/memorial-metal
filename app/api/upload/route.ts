@@ -1,33 +1,88 @@
+
 import { NextResponse } from "next/server";
-import { createSupabaseAdmin } from "@/lib/supabase";
+import { v2 as cloudinary } from "cloudinary";
 import crypto from "crypto";
+
+export const runtime = "nodejs";
+
+cloudinary.config();
 
 export async function POST(req: Request) {
   try {
-    const formData = await req.formData();
-    const file = formData.get("file") as File | null;
-    if (!file) return NextResponse.json({ message: "Dosya yok." }, { status: 400 });
-
-    const ext = file.name.split(".").pop() || "jpg";
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const path = `orders/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-
-    const supabase = createSupabaseAdmin();
-    const bucket = process.env.SUPABASE_BUCKET || "uploads";
-
-    const { error } = await supabase.storage.from(bucket).upload(path, buffer, {
-      contentType: file.type,
-      upsert: false
-    });
-
-    if (error) {
-      return NextResponse.json({ message: error.message }, { status: 500 });
+    if (!process.env.CLOUDINARY_URL) {
+      return NextResponse.json(
+        { message: "Cloudinary bağlantı ayarı bulunamadı." },
+        { status: 500 }
+      );
     }
 
-    const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 60 * 24);
-    return NextResponse.json({ path, signedUrl: data?.signedUrl || "" });
-  } catch {
-    return NextResponse.json({ message: "Upload başarısız." }, { status: 500 });
+    const formData = await req.formData();
+    const file = formData.get("file");
+    const purpose = formData.get("purpose");
+
+    if (!(file instanceof File) || file.size === 0) {
+      return NextResponse.json(
+        { message: "Lütfen fotoğraf seçin." },
+        { status: 400 }
+      );
+    }
+
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json(
+        { message: "JPG, PNG, WEBP veya GIF seçin." },
+        { status: 400 }
+      );
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json(
+        { message: "Fotoğraf en fazla 10 MB olabilir." },
+        { status: 400 }
+      );
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const isProduct = purpose === "product";
+
+    const result = await cloudinary.uploader.upload(
+      `data:${file.type};base64,${buffer.toString("base64")}`,
+      {
+        folder: isProduct
+          ? "memorial-metal/products"
+          : "memorial-metal/orders",
+        public_id: `${Date.now()}-${crypto.randomUUID()}`,
+        resource_type: "image",
+        type: isProduct ? "upload" : "authenticated",
+      }
+    );
+
+    const imageUrl = isProduct
+      ? result.secure_url
+      : cloudinary.url(result.public_id, {
+          secure: true,
+          resource_type: "image",
+          type: "authenticated",
+          sign_url: true,
+        });
+
+    return NextResponse.json({
+      path: result.public_id,
+      image: imageUrl,
+      signedUrl: imageUrl,
+    });
+  } catch (error) {
+    console.error("Upload hatası:", error);
+
+    return NextResponse.json(
+      { message: "Fotoğraf yüklenemedi. Sunucu hatasını kontrol edin." },
+      { status: 500 }
+    );
   }
 }
