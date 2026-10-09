@@ -8,7 +8,14 @@ cloudinary.config();
 
 export async function POST(req: Request) {
   try {
-    if (!process.env.CLOUDINARY_URL) {
+    const cloudinaryUrl = process.env.CLOUDINARY_URL;
+
+    console.log("Cloudinary ortam kontrolü:", {
+      exists: Boolean(cloudinaryUrl),
+      length: cloudinaryUrl?.length ?? 0,
+    });
+
+    if (!cloudinaryUrl) {
       console.error("CLOUDINARY_URL ortam değişkeni bulunamadı.");
 
       return NextResponse.json(
